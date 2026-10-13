@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A0M Pharma Systems - Odoo Enterprise</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8f9fa; }
+        .odoo-purple { background-color: #714B67; }
+        .odoo-purple-dark { background-color: #56384f; }
+        .odoo-purple-light { background-color: #8f5f82; }
+        .odoo-text { color: #714B67; }
+        .odoo-border { border-color: #714B67; }
+        .odoo-btn { background-color: #714B67; color: white; }
+        .odoo-btn:hover { background-color: #56384f; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(229, 231, 235, 0.8); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body class="text-gray-800 bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar (Odoo Style) -->
+    <header class="odoo-purple text-white shadow-md sticky top-0 z-50">
+        <div class="flex items-center justify-between px-4 py-2.5">
+            <!-- Left Branding -->
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-white/10 p-2 rounded-lg flex items-center justify-center border border-white/20">
+                    <i class="fa-solid font-bold text-xl text-amber-400">A0M</i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">A0M Pharma Systems</h1>
+                    <p class="text-xs text-purple-200">نظام إدارة مخازن الأدوية والمستودعات - Odoo v17</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1 space-x-reverse text-sm font-semibold">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded transition bg-white/20 text-white">
+                    <i class="fa-solid fa-chart-pie ml-1.5"></i>لوحة التحكم
+                </button>
+                <button onclick="switchTab('inventory')" id="nav-inventory" class="px-3 py-1.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-pills ml-1.5"></i>الأدوية والمستلزمات
+                </button>
+                <button onclick="switchTab('companies')" id="nav-companies" class="px-3 py-1.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-building-ngo ml-1.5"></i>شركات الأدوية
+                </button>
+                <button onclick="switchTab('warehouses')" id="nav-warehouses" class="px-3 py-1.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-warehouse ml-1.5"></i>المخازن والفروع (A0M)
+                </button>
+                <button onclick="switchTab('operations')" id="nav-operations" class="px-3 py-1.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-boxes-packing ml-1.5"></i>التحويلات والشحنات
+                </button>
+            </nav>
+
+            <!-- User Profile & Action -->
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="relative">
+                    <button class="flex items-center space-x-2 space-x-reverse bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg border border-white/20 transition">
+                        <span class="w-7 h-7 bg-amber-400 text-purple-900 font-bold rounded-full flex items-center justify-center text-xs shadow">A0M</span>
+                        <span class="text-sm font-medium hidden sm:inline">المدير A0M</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Sub-header Control Bar -->
+    <div class="bg-white border-b border-gray-200 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center space-x-3 space-x-reverse">
+            <button onclick="openModal('addDrugModal')" class="odoo-btn px-4 py-2 rounded-lg font-semibold text-sm shadow-sm flex items-center gap-2 transition hover:opacity-90">
+                <i class="fa-solid fa-plus"></i> إدخال صنف جديد
+            </button>
+            <button onclick="openModal('addCompanyModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-sm flex items-center gap-2 transition">
+                <i class="fa-solid fa-building-circle-check"></i> إضافة شركة جديدة
+            </button>
+        </div>
+
+        <!-- Global Search Bar -->
+        <div class="flex items-center gap-2 flex-1 max-w-md">
+            <div class="relative w-full">
+                <input type="text" id="searchInput" onkeyup="filterData()" placeholder="بحث باسم الدواء، المادة الفعالة، الشركة، أو الرف..." 
+                       class="w-full pr-10 pl-4 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white transition">
+                <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-gray-400"></i>
+            </div>
+        </div>
+
+        <!-- View Switcher -->
+        <div class="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
+            <button onclick="setView('kanban')" id="btn-kanban" class="p-1.5 px-3 rounded bg-white shadow-sm text-gray-700 text-xs font-bold flex items-center gap-1">
+                <i class="fa-solid fa-border-all"></i> Kanban
+            </button>
+            <button onclick="setView('list')" id="btn-list" class="p-1.5 px-3 rounded text-gray-500 text-xs font-bold flex items-center gap-1 hover:text-gray-700">
+                <i class="fa-solid fa-list"></i> List
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto">
+
+        <!-- 1. DASHBOARD TAB -->
+        <section id="tab-dashboard" class="space-y-6">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card p-5 rounded-xl border-r-4 border-r-purple-600 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">إجمالي أصناف الأدوية</p>
+                            <h3 class="text-2xl font-extrabold text-gray-800 mt-1" id="stat-total-drugs">148</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-pills"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-xl border-r-4 border-r-blue-600 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">الشركات المسجلة</p>
+                            <h3 class="text-2xl font-extrabold text-gray-800 mt-1" id="stat-total-companies">12</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-industry"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-xl border-r-4 border-r-amber-500 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">مخازن A0M الفاعلة</p>
+                            <h3 class="text-2xl font-extrabold text-gray-800 mt-1">4 فروع</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-warehouse"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-xl border-r-4 border-r-rose-600 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">تنبيهات قريب الانتهاء</p>
+                            <h3 class="text-2xl font-extrabold text-rose-600 mt-1">3 أدوية</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts & Details -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Stock Category Distribution Chart -->
+                <div class="glass-card p-5 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-purple-600"></i> توزيع المخزون حسب الشكل الدوائي
+                    </h3>
+                    <div class="h-64 relative">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Warehouses Capacity Status -->
+                <div class="glass-card p-5 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-temperature-arrow-up text-purple-600"></i> حالة وحرارة مخازن A0M
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold text-sm">مخزن A0M الرئيسي - القاهرة</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">22°C (طبيعي)</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: 78%"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-1 block">السعة المستغلة: 78% (78,000 / 100,000 عبوة)</span>
+                        </div>
+
+                        <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold text-sm">مستودع A0M للتبريد (Cold Chain) - الإسكندرية</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">4°C (ثلاجة مبردة)</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 62%"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-1 block">السعة المستغلة: 62% (12,400 / 20,000 طعوم وحقن)</span>
+                        </div>
+
+                        <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold text-sm">مخزن A0M الإقليمي - الدلتا (طنطا)</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">21°C (طبيعي)</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-amber-500 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-1 block">السعة المستغلة: 85% (42,500 / 50,000 عبوة)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. INVENTORY TAB -->
+        <section id="tab-inventory" class="hidden space-y-4">
+            <!-- Filter Pills -->
+            <div class="flex flex-wrap items-center gap-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm">
+                <span class="font-bold text-gray-600 ml-2">تصفية حسب الشكل:</span>
+                <button onclick="filterForm('all')" class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-semibold active-form-filter">الكل</button>
+                <button onclick="filterForm('أقراص')" class="px-3 py-1 rounded-full hover:bg-gray-100 text-gray-600">أقراص (Tablets)</button>
+                <button onclick="filterForm('كبسولات')" class="px-3 py-1 rounded-full hover:bg-gray-100 text-gray-600">كبسولات (Capsules)</button>
+                <button onclick="filterForm('حقن')" class="px-3 py-1 rounded-full hover:bg-gray-100 text-gray-600">حقن (Injections)</button>
+                <button onclick="filterForm('شراب')" class="px-3 py-1 rounded-full hover:bg-gray-100 text-gray-600">شراب (Syrup)</button>
+                <button onclick="filterForm('مستلزمات')" class="px-3 py-1 rounded-full hover:bg-gray-100 text-gray-600">مستلزمات طبية</button>
+            </div>
+
+            <!-- KANBAN VIEW CONTAINER -->
+            <div id="view-kanban" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamic drug cards inserted via JavaScript -->
+            </div>
+
+            <!-- LIST VIEW CONTAINER -->
+            <div id="view-list" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-100 text-gray-700 font-bold border-b">
+                            <tr>
+                                <th class="p-3">اسم الدواء / المادة الفعالة</th>
+                                <th class="p-3">الشركة المصنعة</th>
+                                <th class="p-3">الشكل والتركيز</th>
+                                <th class="p-3">المخزن والرف</th>
+                                <th class="p-3">الكمية المتاحة</th>
+                                <th class="p-3">تاريخ الانتهاء</th>
+                                <th class="p-3">سعر البيع</th>
+                                <th class="p-3 text-center">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drugs-table-body" class="divide-y divide-gray-100">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. COMPANIES TAB -->
+        <section id="tab-companies" class="hidden space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="companies-grid">
+                <!-- Dynamic Companies list -->
+            </div>
+        </section>
+
+        <!-- 4. WAREHOUSES TAB -->
+        <section id="tab-warehouses" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="warehouses-grid">
+                <!-- Dynamic Warehouse details -->
+            </div>
+        </section>
+
+        <!-- 5. OPERATIONS TAB -->
+        <section id="tab-operations" class="hidden space-y-4">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-transfer-rotate text-purple-600"></i> سجل أذونات التحويل بين مخازن A0M
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-50 border-b font-bold text-gray-700">
+                            <tr>
+                                <th class="p-3">رقم الإذن</th>
+                                <th class="p-3">من مخزن</th>
+                                <th class="p-3">إلى مخزن</th>
+                                <th class="p-3">اسم الصنف والكمية</th>
+                                <th class="p-3">التاريخ</th>
+                                <th class="p-3">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr>
+                                <td class="p-3 font-mono text-purple-700 font-bold">WH/INT/00892</td>
+                                <td class="p-3">مخزن القاهرة الرئيسي</td>
+                                <td class="p-3">فرع الصعيد (أسيوط)</td>
+                                <td class="p-3">Augmentin 1g (500 عبوة)</td>
+                                <td class="p-3">2026-10-10</td>
+                                <td class="p-3"><span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold">تم التسليم</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono text-purple-700 font-bold">WH/INT/00893</td>
+                                <td class="p-3">مستودع الإسكندرية المبرد</td>
+                                <td class="p-3">مخزن القاهرة الرئيسي</td>
+                                <td class="p-3">Insulin Mixtard (200 فايال)</td>
+                                <td class="p-3">2026-10-12</td>
+                                <td class="p-3"><span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">قيد النقل M-Truck</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Add New Drug -->
+    <div id="addDrugModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('addDrugModal')" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600 text-xl font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-pills text-purple-600"></i> إضافة صنف أدوية جديد إلى مخازن A0M
+            </h3>
+            <form id="addDrugForm" onsubmit="saveDrug(event)" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">اسم الدواء التجاري *</label>
+                        <input type="text" id="drugName" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">المادة الفعالة (Active Ingredient) *</label>
+                        <input type="text" id="activeIng" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">الشركة المصنعة *</label>
+                        <select id="drugCompany" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                            <option value="Novartis">Novartis</option>
+                            <option value="Pfizer">Pfizer</option>
+                            <option value="Sanofi">Sanofi</option>
+                            <option value="GSK">GSK</option>
+                            <option value="AstraZeneca">AstraZeneca</option>
+                            <option value="Eva Pharma">Eva Pharma</option>
+                            <option value="Amoun">Amoun Pharmaceuticals</option>
+                            <option value="Pharco">Pharco</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">الشكل الدوائي *</label>
+                        <select id="drugForm" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                            <option value="أقراص">أقراص (Tablets)</option>
+                            <option value="كبسولات">كبسولات (Capsules)</option>
+                            <option value="حقن">حقن (Injections)</option>
+                            <option value="شراب">شراب (Syrup)</option>
+                            <option value="مستلزمات">مستلزمات طبية</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">الكمية الأولية *</label>
+                        <input type="number" id="drugQty" required min="1" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">سعر البيع (EGP) *</label>
+                        <input type="number" id="drugPrice" required step="0.5" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">المخزن المستهدف *</label>
+                        <select id="drugWarehouse" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                            <option value="مخزن A0M الرئيسي - القاهرة">مخزن A0M الرئيسي - القاهرة</option>
+                            <option value="مستودع A0M للتبريد - الإسكندرية">مستودع A0M للتبريد - الإسكندرية</option>
+                            <option value="مخزن A0M الإقليمي - طنطا">مخزن A0M الإقليمي - طنطا</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">تاريخ الانتهاء *</label>
+                        <input type="date" id="drugExp" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-4 border-t">
+                    <button type="button" onclick="closeModal('addDrugModal')" class="px-4 py-2 border rounded-lg text-sm text-gray-600">إلغاء</button>
+                    <button type="submit" class="odoo-btn px-6 py-2 rounded-lg text-sm font-bold">حفظ الصنف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Code -->
+    <script>
+        // Initial Dataset
+        let drugsData = [
+            { id: 101, name: "Augmentin 1g", active: "Amoxicillin + Clavulanic Acid", company: "GSK", form: "أقراص", qty: 1200, price: 135, warehouse: "مخزن A0M الرئيسي - القاهرة", rack: "A-12-04", exp: "2027-08-15" },
+            { id: 102, name: "Concor 5mg", active: "Bisoprolol", company: "Merck / Amoun", form: "أقراص", qty: 850, price: 60, warehouse: "مخزن A0M الرئيسي - القاهرة", rack: "B-03-01", exp: "2027-01-20" },
+            { id: 103, name: "Insulin Mixtard 100IU", active: "Human Insulin", company: "Novo Nordisk", form: "حقن", qty: 340, price: 210, warehouse: "مستودع A0M للتبريد - الإسكندرية", rack: "COLD-02", exp: "2026-12-01" },
+            { id: 104, name: "Catafast 50mg", active: "Diclofenac Potassium", company: "Novartis", form: "أقراص", qty: 2100, price: 85, warehouse: "مخزن A0M الإقليمي - طنطا", rack: "C-08-02", exp: "2028-03-10" },
+            { id: 105, name: "Panadol Extra", active: "Paracetamol + Caffeine", company: "GSK", form: "أقراص", qty: 4500, price: 45, warehouse: "مخزن A0M الرئيسي - القاهرة", rack: "A-01-09", exp: "2027-11-30" },
+            { id: 106, name: "Clexane 4000IU", active: "Enoxaparin Sodium", company: "Sanofi", form: "حقن", qty: 190, price: 380, warehouse: "مستودع A0M للتبريد - الإسكندرية", rack: "COLD-05", exp: "2026-11-15" }
+        ];
+
+        let companiesData = [
+            { name: "GSK (GlaxoSmithKline)", country: "المملكة المتحدة / مصر", phone: "+20 2 26180000", items: 42, rep: "د. أسامة الشريف" },
+            { name: "Novartis", country: "سويسرا / مصر", phone: "+20 2 22671111", items: 38, rep: "د. شريف عبد الله" },
+            { name: "Sanofi", country: "فرنسا / مصر", phone: "+20 2 25862000", items: 29, rep: "د. نادية فتحي" },
+            { name: "Eva Pharma", country: "مصر", phone: "+20 2 33384000", items: 55, rep: "د. أحمد منصور" },
+            { name: "Amoun Pharmaceuticals", country: "مصر", phone: "+20 2 46100000", items: 60, rep: "د. مروان بدر" }
+        ];
+
+        let warehousesData = [
+            { name: "مخزن A0M الرئيسي - القاهرة", location: "المنطقة الصناعية - العبور", cap: "100,000 عبوة", temp: "22°C (مكيف)", manager: "م. كريم حسام" },
+            { name: "مستودع A0M للتبريد - الإسكندرية", location: "برج العرب - المنطقة اللوجستية", cap: "20,000 عبوة", temp: "2°C - 8°C (سلسلة تبريد)", manager: "د. هاني رمضان" },
+            { name: "مخزن A0M الإقليمي - الدلتا (طنطا)", location: "طريق طنطا الزراعي", cap: "50,000 عبوة", temp: "21°C (مكيف)", manager: "أ. محمود القاضي" },
+            { name: "فرع A0M الصعيد - أسيوط", location: "مدينة أسيوط الجديدة", cap: "40,000 عبوة", temp: "23°C (مكيف)", manager: "د. خالد فاروق" }
+        ];
+
+        // Initialize Page
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDrugs();
+            renderCompanies();
+            renderWarehouses();
+            initCharts();
+        });
+
+        // Tab Switching
+        function switchTab(tabId) {
+            ['dashboard', 'inventory', 'companies', 'warehouses', 'operations'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('nav-' + t).classList.remove('bg-white/20');
+            });
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('nav-' + tabId).classList.add('bg-white/20');
+        }
+
+        // Set Kanban vs List View
+        function setView(view) {
+            if (view === 'kanban') {
+                document.getElementById('view-kanban').classList.remove('hidden');
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('btn-kanban').classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+                document.getElementById('btn-list').classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+            } else {
+                document.getElementById('view-kanban').classList.add('hidden');
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('btn-list').classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+                document.getElementById('btn-kanban').classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+            }
+        }
+
+        // Render Drugs
+        function renderDrugs(data = drugsData) {
+            const kanbanContainer = document.getElementById('view-kanban');
+            const listTableBody = document.getElementById('drugs-table-body');
+            
+            kanbanContainer.innerHTML = '';
+            listTableBody.innerHTML = '';
+
+            data.forEach(drug => {
+                // Kanban Card
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition relative flex flex-col justify-between space-y-3";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">${drug.form}</span>
+                                <h4 class="font-extrabold text-gray-800 text-base mt-1">${drug.name}</h4>
+                            </div>
+                            <span class="text-xs font-mono font-bold bg-gray-100 px-2 py-1 rounded border">${drug.company}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-vial ml-1"></i>${drug.active}</p>
+                    </div>
+
+                    <div class="bg-slate-50 p-2.5 rounded-lg border text-xs space-y-1">
+                        <div class="flex justify-between text-gray-600">
+                            <span>المخزن والرف:</span>
+                            <span class="font-bold text-gray-800">${drug.rack}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600">
+                            <span>تاريخ الانتهاء:</span>
+                            <span class="font-bold text-rose-600">${drug.exp}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <div>
+                            <span class="text-xs text-gray-400 block">الكمية بالمخزن</span>
+                            <span class="text-lg font-extrabold text-purple-900">${drug.qty} <span class="text-xs font-normal">عبوة</span></span>
+                        </div>
+                        <div class="text-left">
+                            <span class="text-xs text-gray-400 block">السعر</span>
+                            <span class="text-base font-bold text-emerald-600">${drug.price} EGP</span>
+                        </div>
+                    </div>
+                `;
+                kanbanContainer.appendChild(card);
+
+                // List Row
+                const row = document.createElement('tr');
+                row.className = "hover:bg-gray-50 transition";
+                row.innerHTML = `
+                    <td class="p-3">
+                        <div class="font-bold text-gray-800">${drug.name}</div>
+                        <div class="text-xs text-gray-400">${drug.active}</div>
+                    </td>
+                    <td class="p-3 font-semibold">${drug.company}</td>
+                    <td class="p-3"><span class="text-xs bg-gray-100 px-2 py-1 rounded font-semibold">${drug.form}</span></td>
+                    <td class="p-3 text-xs">${drug.warehouse} <br><span class="font-bold text-purple-700">الرف: ${drug.rack}</span></td>
+                    <td class="p-3 font-bold text-purple-900">${drug.qty} عبوة</td>
+                    <td class="p-3 text-xs font-bold text-rose-600">${drug.exp}</td>
+                    <td class="p-3 font-bold text-emerald-600">${drug.price} EGP</td>
+                    <td class="p-3 text-center">
+                        <button class="text-purple-600 hover:text-purple-800 font-bold text-xs bg-purple-50 p-1.5 rounded"><i class="fa-solid fa-pen"></i></button>
+                    </td>
+                `;
+                listTableBody.appendChild(row);
+            });
+
+            document.getElementById('stat-total-drugs').innerText = drugsData.length;
+        }
+
+        // Render Companies
+        function renderCompanies() {
+            const container = document.getElementById('companies-grid');
+            container.innerHTML = '';
+            companiesData.forEach(c => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl border shadow-sm hover:shadow-md transition space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b pb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-lg">${c.name}</h4>
+                            <p class="text-xs text-gray-400"><i class="fa-solid fa-earth-americas ml-1"></i>${c.country}</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 space-y-1.5">
+                        <p><i class="fa-solid fa-phone text-gray-400 ml-1"></i> <strong>المكتب العلمي:</strong> ${c.phone}</p>
+                        <p><i class="fa-solid fa-user-doctor text-gray-400 ml-1"></i> <strong>المندوب المباشر:</strong> ${c.rep}</p>
+                        <p><i class="fa-solid fa-boxes-stacked text-gray-400 ml-1"></i> <strong>الأصناف الموردة:</strong> ${c.items} صنف</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Render Warehouses
+        function renderWarehouses() {
+            const container = document.getElementById('warehouses-grid');
+            container.innerHTML = '';
+            warehousesData.forEach(w => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl border shadow-sm space-y-3";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-extrabold text-purple-900 text-lg">${w.name}</h4>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot ml-1"></i>${w.location}</p>
+                        </div>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">${w.temp}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-lg border">
+                        <div><span class="text-gray-400">السعة التخزينية:</span> <p class="font-bold">${w.cap}</p></div>
+                        <div><span class="text-gray-400">أمين المخزن:</span> <p class="font-bold">${w.manager}</p></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Filter Data
+        function filterData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = drugsData.filter(d => 
+                d.name.toLowerCase().includes(query) || 
+                d.active.toLowerCase().includes(query) || 
+                d.company.toLowerCase().includes(query)
+            );
+            renderDrugs(filtered);
+        }
+
+        // Modal Helpers
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Save New Drug
+        function saveDrug(e) {
+            e.preventDefault();
+            const newDrug = {
+                id: Date.now(),
+                name: document.getElementById('drugName').value,
+                active: document.getElementById('activeIng').value,
+                company: document.getElementById('drugCompany').value,
+                form: document.getElementById('drugForm').value,
+                qty: parseInt(document.getElementById('drugQty').value),
+                price: parseFloat(document.getElementById('drugPrice').value),
+                warehouse: document.getElementById('drugWarehouse').value,
+                rack: "RACK-" + Math.floor(Math.random() * 50),
+                exp: document.getElementById('drugExp').value
+            };
+            drugsData.unshift(newDrug);
+            renderDrugs();
+            closeModal('addDrugModal');
+            document.getElementById('addDrugForm').reset();
+        }
+
+        // Chart Initialization
+        function initCharts() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['أقراص', 'كبسولات', 'حقن', 'شراب', 'مستلزمات'],
+                    datasets: [{
+                        data: [55, 25, 12, 18, 10],
+                        backgroundColor: ['#714B67', '#2563eb', '#059669', '#d97706', '#dc2626']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
